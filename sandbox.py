@@ -1,84 +1,63 @@
-def solution(n: int, m: int, p: list[int]) -> list[int]:        
-    # lower_bound будет хранить минимально допустимое значение для res_p[i]
-    # upper_bound будет хранить максимально допустимое значение для res_p[i]
+def solution(n: int) -> int:
+    # your code    
+    is_simple_numbers = [True] * (n + 1)
+    is_simple_numbers[0] = False
+    is_simple_numbers[1] = False
+    # решето эратосфена
+    for i in range(2, int(n ** 0.5) + 1):
+        if is_simple_numbers[i]:                
+            for num in range(i * i, n + 1, i):
+                is_simple_numbers[num] = False
 
-    # Заполняем lower_bound проходом слева направо
-    lower_bound = [0] * n 
+    simple_numbers = []
+    for i in range(2, n + 1):
+        if is_simple_numbers[i]:
+            simple_numbers.append(i)
     
-    # Инициализация первого элемента
-    if p[0] != -1:
-        if p[0] < m: # Если первый раунд меньше минимального заработка
-            return [-1]
-        lower_bound[0] = p[0]
-    else:
-        lower_bound[0] = m # Минимальный возможный заработок за первый раунд
-
-    for i in range(1, n):
-        if p[i] != -1:
-            # Если значение p[i] известно, оно должно быть не меньше p[i-1] + m
-            if p[i] < lower_bound[i-1] + m:
-                return [-1]
-            lower_bound[i] = p[i]
-        else:
-            # Если p[i] неизвестно, его минимальное значение - это p[i-1] + m
-            lower_bound[i] = lower_bound[i-1] + m
-
-    # Заполняем upper_bound проходом справа налево
-
-    #    Убеждаемся, что каждое значение не превышает p[i+1] - m
-    upper_bound = [0] * n
-
-    # Инициализация последнего элемента
-    if p[n-1] != -1:
-        upper_bound[n-1] = p[n-1]
-    else:
-        '''
-        Если последний элемент неизвестен, ему нет верхнего ограничения от последующих
-        Но ему есть ограничение от предыдущих: он должен быть не меньше lower_bound[n-1]                        
-        '''        
-        upper_bound[n-1] = lower_bound[n-1] 
+    simple_numbers_count = len(simple_numbers)
+    # print(simple_numbers)
+    if simple_numbers_count <= 2:
+        return 0
+    ans = 0    
+    '''
+    Мы должны перебирать все пары для q1 = 2, все тройки для q1 = 3, все пятерки для q1 =5, и тд. 
+    И это очень вычислительно затратно... 
+    но взглянем на условие: сумма этих комбинаций должна делиться на **2**q1 - ЧЕТНОЕ ЧИСЛО. 
+    1) Все простые числа за исключением 2 - нечетные
+    2) Значит длина комбинаций за исключением пар - тоже нечетная (3 - 3, 5 - 5 и тд)
+    3) **Сумма нечетного количества нечетных чисел всегда будет нечетной**
+    4) Соответственно нечетное число на четное делиться не может.
+    То есть мы должны искать только пары - q1 = 2 - всегда
+    '''    
+    # q1 = 2
+    # d = q1 * 2 = 4
+    # index of q1 всегда 1
 
 
-    for i in range(n - 2, -1, -1):
-        if p[i] != -1:
-            # Если p[i] известно, оно должно быть не больше p[i+1] - m
-            if p[i] > upper_bound[i+1] - m:
-                return [-1]
-            upper_bound[i] = p[i]
-        else:
-            # Если p[i] неизвестно, его максимальное значение - это p[i+1] - m
-            upper_bound[i] = upper_bound[i+1] - m
-        
-        # upper_bound[i] также не может быть меньше lower_bound[i]
-        # Если границы пересеклись, решение невозможно
-        if upper_bound[i] < lower_bound[i]:
-            return [-1] 
+    # ДОЛГО
+    # for i in range(1, simple_numbers_count):
+    #     q2 = simple_numbers[i]
+    #     for j in range(i + 1, simple_numbers_count):
+    #         q3 = simple_numbers[j]
+    #         if (q2 + q3) % d == 0:
+    #             ans += 1                
 
     '''
-    Восстанавливаем res_p с учетом обеих границ
-    Если p[i] == -1, мы можем выбрать любое значение между lower_bound[i] и upper_bound[i].        
-    Для восстановления используем upper_bound как окончательный массив, так как он
-    уже скорректирован сверху, и если -1 были, они заполнены максимальным возможным значением
-    при условии выполнения p[i] <= p[i+1] - m.        
-    '''          
-    res_p = [0] * n
-    res_p[n-1] = upper_bound[n-1] # Последний элемент определяется upper_bound
-
-    for i in range(n - 2, -1, -1):
-        if p[i] != -1:
-            res_p[i] = p[i]
-        else:            
-            res_p[i] = res_p[i+1] - m                                                             
-
-
-    # после восстановления надо только посчитать разницу между res_p[i] и res_p[i + 1], 
-    # отталкиваясь от первого элемента
-    ans = [0] * n
-    ans[0] = res_p[0]
+    Надо чтобы сумма q2+q3 делилась на 4, 
+    любое нечетное число при делении на 4 дает либо 1 либо 3 в остатке,
+    то есть оно может быть вида 4k + 1 или 4k + 3, где k - целый остаток от деления 
+    нам нужны пары вида (4k + 1, 4k + 3) или (4k + 3, 4k + 1) - так как (4k_1 + 3 + 4k_2 + 1) % 4 === 0
+    '''
+    mod1_count = 0
+    mod3_count = 0
+    ans = 0
+    for i in range(1, simple_numbers_count):
+        if simple_numbers[i] % 4 == 1:
+            mod1_count += 1
+            ans += mod3_count
+        if simple_numbers[i] % 4 == 3:
+            mod3_count += 1
+            ans += mod1_count             
     
-    for i in range(1, n):
-        ans[i] = res_p[i] - res_p[i - 1]
-
     return ans
-
-print(solution(3, 1, [1, 2, 3]))
+print('answer', solution(7))
